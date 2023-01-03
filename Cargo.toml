@@ -1,0 +1,16 @@
+[package]
+name = "kml_to_fgfp"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "A tool to convert Google Earth .kml files into FlightGear flight plans (.fgfp)."
+repository = "https://github.com/nico-castell/kml_to_fgfp"
+documentation = "https://docs.rs/kml_to_fgfp/latest/"
+homepage = "https://github.com/nico-castell/kml_to_fgfp"
+keywords = ["flightgear", "conversion-tool", "google-earth", "kml", "fgfp"]
+categories = ["command-line-utilities"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+xml-rs = "0.8.4"
