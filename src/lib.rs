@@ -113,6 +113,24 @@ pub fn write_start_of_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> 
     Ok(())
 }
 
+/// Write the destination and arrival airports to the .fgfp's xml tree. The airport codes should
+/// have [ICAO codes](https://en.wikipedia.org/wiki/List_of_airports_by_ICAO_code:_A).
+///
+/// Codes being given as YSSY/34L, for example, will be interpreted as:
+/// - Airport code: YSSY
+/// - Runway: 34L
+pub fn write_airports<W: Write>(writer: &mut EventWriter<W>, dep: &str, arr: &str) -> Result<()> {
+    Ok(())
+}
+
+/// Write the end of the .fgfp's xml tree.
+#[rustfmt::skip]
+pub fn close_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> {
+    write_event(writer, EventType::ClosingElement, "PropertyList")?;
+
+    Ok(())
+}
+
 /// Takes a [`&str`](str) that would look something like
 ///
 /// `{http:://www.opengis.net/kml/2.2}coordinates`

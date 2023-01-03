@@ -70,14 +70,21 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         .indent_string("\t")
         .create_writer(&mut output_file);
 
+    // 1. Write the beginning of the tree.
     kml_to_fgfp::write_start_of_tree(&mut writer)?;
+
+    // 2. Write the destination and arrival airports.
 
     // Create the reader object.
     let input_file = File::open(config.input)?;
     let input_file = BufReader::new(input_file);
     let parser = EventReader::new(input_file);
 
+    // 3. Transform the route in the .kml to .fgfp.
     kml_to_fgfp::transform_route(parser, &mut writer)?;
+
+    // 4. Close the xml tree.
+    kml_to_fgfp::close_tree(&mut writer)?;
 
     Ok(())
 }
