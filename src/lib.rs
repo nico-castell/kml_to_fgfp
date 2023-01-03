@@ -27,6 +27,9 @@ pub fn transform(input: PathBuf, output: PathBuf) -> result::Result<(), Box<dyn 
         .indent_string("\t")
         .create_writer(&mut output_file);
 
+    // Write the initial tree for the .fgfp
+    write_start_of_tree(&mut writer)?;
+
     for element in parser {
         match element {
             Ok(XmlEvent::Characters(line)) => {
@@ -115,4 +118,28 @@ fn simplify_name<'a>(name: &'a str) -> &'a str {
     let split_name: Vec<&str> = name.split('}').collect();
 
     split_name[is_split]
+}
+
+/// Write the start of the .fgfp's xml tree. AKA the version, flight-rules, flight-type and
+/// estimated duration.
+fn write_start_of_tree<W: Write>(mut writer: &mut EventWriter<W>) -> Result<()> {
+    write_event(&mut writer, EventType::OpeningElement, "PropertyList")?;
+
+    write_event(&mut writer, EventType::OpeningElement, "version type=int")?;
+    write_event(&mut writer, EventType::Content, "2")?;
+    write_event(&mut writer, EventType::ClosingElement, "version")?;
+
+    write_event(&mut writer, EventType::OpeningElement, "flight-rules type=string")?;
+    write_event(&mut writer, EventType::Content, "V")?;
+    write_event(&mut writer, EventType::ClosingElement, "flight-rules")?;
+
+    write_event(&mut writer, EventType::OpeningElement, "flight-type type=string")?;
+    write_event(&mut writer, EventType::Content, "X")?;
+    write_event(&mut writer, EventType::ClosingElement, "flight-type")?;
+
+    write_event(&mut writer, EventType::OpeningElement, "estimated-duration-minutes type=int")?;
+    write_event(&mut writer, EventType::Content, "0")?;
+    write_event(&mut writer, EventType::ClosingElement, "estimated-duration-minutes")?;
+
+    Ok(())
 }
