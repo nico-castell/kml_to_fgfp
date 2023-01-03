@@ -1,34 +1,20 @@
 use std::{
     error::Error,
-    fs::File,
-    io::{BufReader, Write},
-    path::PathBuf,
+    io::{Read, Write},
     result,
 };
 
-use xml::{
-    reader::EventReader,
-    writer::{EmitterConfig, EventWriter, Result},
-};
+// Export these structs so callers needn't have to declare xml-rs as a dependency.
+pub use xml::{reader::EventReader, writer::EmitterConfig};
+
+use xml::writer::{EventWriter, Result};
 
 // TODO Idea: Use `output: Option<PathBuf>` to handle writing to a file or stdout.
-pub fn transform(input: PathBuf, output: PathBuf) -> result::Result<(), Box<dyn Error>> {
+pub fn transform_route<W: Write, R: Read>(
+    parser: EventReader<R>,
+    mut writer: &mut EventWriter<W>,
+) -> result::Result<(), Box<dyn Error>> {
     use xml::reader::XmlEvent;
-
-    // Create the reader object.
-    let input_file = File::open(input)?;
-    let input_file = BufReader::new(input_file);
-    let parser = EventReader::new(input_file);
-
-    // Create the writer object.
-    let mut output_file = File::create(output)?;
-    let mut writer = EmitterConfig::new()
-        .perform_indent(true)
-        .indent_string("\t")
-        .create_writer(&mut output_file);
-
-    // Write the initial tree for the .fgfp
-    write_start_of_tree(&mut writer)?;
 
     for element in parser {
         match element {
@@ -102,27 +88,10 @@ fn write_event<W: Write>(w: &mut EventWriter<W>, event_type: EventType, line: &s
     w.write(event)
 }
 
-/// Takes a string that would look something like
-///
-/// `{http:://www.opengis.net/kml/2.2}coordinates`
-///
-/// and removes the link by splitting the &str at the '}' and returning the element to the right.
-///
-/// `coordinates`
-fn simplify_name<'a>(name: &'a str) -> &'a str {
-    let is_split = match name.find('}') {
-        Some(_) => 1,
-        None => 0,
-    };
-
-    let split_name: Vec<&str> = name.split('}').collect();
-
-    split_name[is_split]
-}
-
 /// Write the start of the .fgfp's xml tree. AKA the version, flight-rules, flight-type and
 /// estimated duration.
-fn write_start_of_tree<W: Write>(mut writer: &mut EventWriter<W>) -> Result<()> {
+#[rustfmt::skip]
+pub fn write_start_of_tree<W: Write>(mut writer: &mut EventWriter<W>) -> Result<()> {
     write_event(&mut writer, EventType::OpeningElement, "PropertyList")?;
 
     write_event(&mut writer, EventType::OpeningElement, "version type=int")?;
@@ -142,4 +111,22 @@ fn write_start_of_tree<W: Write>(mut writer: &mut EventWriter<W>) -> Result<()> 
     write_event(&mut writer, EventType::ClosingElement, "estimated-duration-minutes")?;
 
     Ok(())
+}
+
+/// Takes a string that would look something like
+///
+/// `{http:://www.opengis.net/kml/2.2}coordinates`
+///
+/// and removes the link by splitting the &str at the '}' and returning the element to the right.
+///
+/// `coordinates`
+fn simplify_name<'a>(name: &'a str) -> &'a str {
+    let is_split = match name.find('}') {
+        Some(_) => 1,
+        None => 0,
+    };
+
+    let split_name: Vec<&str> = name.split('}').collect();
+
+    split_name[is_split]
 }

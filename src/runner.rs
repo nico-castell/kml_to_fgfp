@@ -1,7 +1,7 @@
-use std::{error::Error, path::PathBuf};
+use std::{error::Error, fs::File, io::BufReader, path::PathBuf};
 
 /// The library crate to perform the actual operations
-use kml_to_fgfp;
+use kml_to_fgfp::{self, EmitterConfig, EventReader};
 
 /// The config for the transformation of the .kml file into .fgfp. Taken as an argument by the
 /// [`run`](run) function.
@@ -63,7 +63,21 @@ Version: {}, {} License
 
 // FIXME: Add documentation after documenting kml_to_fgfp::transform.
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    kml_to_fgfp::transform(config.input, config.output)?;
+    // Create the writer object.
+    let mut output_file = File::create(config.output)?;
+    let mut writer = EmitterConfig::new()
+        .perform_indent(true)
+        .indent_string("\t")
+        .create_writer(&mut output_file);
+
+    kml_to_fgfp::write_start_of_tree(&mut writer)?;
+
+    // Create the reader object.
+    let input_file = File::open(config.input)?;
+    let input_file = BufReader::new(input_file);
+    let parser = EventReader::new(input_file);
+
+    kml_to_fgfp::transform_route(parser, &mut writer)?;
 
     Ok(())
 }
