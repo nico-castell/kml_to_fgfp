@@ -27,33 +27,30 @@ pub fn transform(input: PathBuf, output: PathBuf) -> result::Result<(), Box<dyn 
         .indent_string("\t")
         .create_writer(&mut output_file);
 
-    {
-        // Use this sub-scope to process the xml.
-        for element in parser {
-            match element {
-                Ok(XmlEvent::Characters(line)) => {
-                    write_event(&mut writer, EventType::Content, &line)?;
-                }
-                // TODO: Determine if handling attributes is actually necessary.
-                Ok(XmlEvent::StartElement { name, .. }) => {
-                    let name = name.to_string();
-                    let name = simplify_name(&name);
-
-                    write_event(&mut writer, EventType::OpeningElement, name)?;
-                }
-                Ok(XmlEvent::EndElement { name }) => {
-                    let name = name.to_string();
-                    let name = simplify_name(&name);
-
-                    write_event(&mut writer, EventType::ClosingElement, name)?;
-                }
-                Err(e) => {
-                    // TODO: Determine if there's a better way to handle this error.
-                    eprintln!("Error: {}", e);
-                    break;
-                }
-                _ => {}
+    for element in parser {
+        match element {
+            Ok(XmlEvent::Characters(line)) => {
+                write_event(&mut writer, EventType::Content, &line)?;
             }
+            // TODO: Determine if handling attributes is actually necessary.
+            Ok(XmlEvent::StartElement { name, .. }) => {
+                let name = name.to_string();
+                let name = simplify_name(&name);
+
+                write_event(&mut writer, EventType::OpeningElement, name)?;
+            }
+            Ok(XmlEvent::EndElement { name }) => {
+                let name = name.to_string();
+                let name = simplify_name(&name);
+
+                write_event(&mut writer, EventType::ClosingElement, name)?;
+            }
+            Err(e) => {
+                // TODO: Determine if there's a better way to handle this error.
+                eprintln!("Error: {}", e);
+                break;
+            }
+            _ => {}
         }
     }
 
