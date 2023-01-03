@@ -121,9 +121,42 @@ pub fn write_start_of_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> 
 /// - Runway: 34L
 pub fn write_airports<W: Write>(
     writer: &mut EventWriter<W>,
-    dep: Option<String>,
-    arr: Option<String>,
+    departure: Option<String>,
+    arrival: Option<String>,
 ) -> Result<()> {
+    if let Some(code) = departure {
+        write_event(writer, EventType::OpeningElement, "departure")?;
+        write_airport_details(writer, code)?;
+        write_event(writer, EventType::ClosingElement, "departure")?;
+    }
+
+    if let Some(code) = arrival {
+        write_event(writer, EventType::OpeningElement, "destination")?;
+        write_airport_details(writer, code)?;
+        write_event(writer, EventType::ClosingElement, "destination")?;
+    }
+
+    Ok(())
+}
+
+/// Internal function to write the details of an airport.
+fn write_airport_details<W: Write>(writer: &mut EventWriter<W>, code: String) -> Result<()> {
+    if code.contains('/') {
+        let elements: Vec<&str> = code.split('/').collect();
+
+        write_event(writer, EventType::OpeningElement, "airport type=string")?;
+        write_event(writer, EventType::Content, elements[0])?;
+        write_event(writer, EventType::ClosingElement, "airport")?;
+
+        write_event(writer, EventType::OpeningElement, "runway type=string")?;
+        write_event(writer, EventType::Content, elements[1])?;
+        write_event(writer, EventType::ClosingElement, "runway")?;
+    } else {
+        write_event(writer, EventType::OpeningElement, "airport type=string")?;
+        write_event(writer, EventType::Content, &code)?;
+        write_event(writer, EventType::ClosingElement, "airport")?;
+    }
+
     Ok(())
 }
 
@@ -135,13 +168,9 @@ pub fn close_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> {
     Ok(())
 }
 
-/// Takes a [`&str`](str) that would look something like
-///
-/// `{http:://www.opengis.net/kml/2.2}coordinates`
-///
-/// and removes the link by splitting the &str at the '}' and returning the element to the right.
-///
-/// `coordinates`
+/// Internal function that takes a [`&str`](str) that would look something like
+/// `{http:://www.opengis.net/kml/2.2}coordinates` and removes the link by splitting the &str at the
+/// '}' and returning the element to the right: `coordinates`
 fn simplify_name(name: &str) -> &str {
     let is_split = match name.find('}') {
         Some(_) => 1,
