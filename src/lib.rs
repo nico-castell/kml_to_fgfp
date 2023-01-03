@@ -119,7 +119,11 @@ pub fn write_start_of_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> 
 /// Codes being given as YSSY/34L, for example, will be interpreted as:
 /// - Airport code: YSSY
 /// - Runway: 34L
-pub fn write_airports<W: Write>(writer: &mut EventWriter<W>, dep: &str, arr: &str) -> Result<()> {
+pub fn write_airports<W: Write>(
+    writer: &mut EventWriter<W>,
+    dep: Option<String>,
+    arr: Option<String>,
+) -> Result<()> {
     Ok(())
 }
 
