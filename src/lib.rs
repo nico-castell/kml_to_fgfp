@@ -122,7 +122,7 @@ pub fn write_start_of_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> 
 pub fn write_airports<W: Write>(
     writer: &mut EventWriter<W>,
     departure: Option<String>,
-    arrival: Option<String>,
+    destination: Option<String>,
 ) -> Result<()> {
     if let Some(code) = departure {
         write_event(writer, EventType::OpeningElement, "departure")?;
@@ -130,7 +130,7 @@ pub fn write_airports<W: Write>(
         write_event(writer, EventType::ClosingElement, "departure")?;
     }
 
-    if let Some(code) = arrival {
+    if let Some(code) = destination {
         write_event(writer, EventType::OpeningElement, "destination")?;
         write_airport_details(writer, code)?;
         write_event(writer, EventType::ClosingElement, "destination")?;

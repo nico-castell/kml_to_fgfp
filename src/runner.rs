@@ -11,7 +11,7 @@ pub struct Config {
     input: PathBuf,
     output: PathBuf,
     departure: Option<String>,
-    arrival: Option<String>,
+    destination: Option<String>,
 }
 
 impl Config {
@@ -42,7 +42,7 @@ impl Config {
 
         let arrival = args.next();
 
-        Ok(Config { input, output, departure, arrival })
+        Ok(Config { input, output, departure, destination: arrival })
     }
 
     /// Prints the configuration options to stderr.
@@ -80,7 +80,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     kml_to_fgfp::write_start_of_tree(&mut writer)?;
 
     // 2. Write the destination and arrival airports.
-    kml_to_fgfp::write_airports(&mut writer, config.departure, config.arrival)?;
+    kml_to_fgfp::write_airports(&mut writer, config.departure, config.destination)?;
 
     // Create the reader object.
     let input_file = File::open(config.input)?;
