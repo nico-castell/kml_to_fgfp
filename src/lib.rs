@@ -77,7 +77,7 @@ fn write_event<W: Write>(w: &mut EventWriter<W>, event_type: EventType, line: &s
         EventType::OpeningElement => {
             let line: Vec<&str> = line.split(' ').collect();
 
-            let name = line[0].get(1..).unwrap();
+            let name = line[0];
 
             let mut event = XmlEvent::start_element(name);
 
