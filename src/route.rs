@@ -43,6 +43,17 @@ pub fn transform_route<W: Write, R: Read>(
 
     let mut current_search = LookingFor::OpeningPlacemark;
 
+    // The waypoint information
+    let mut wp = 0;
+    let mut action = Action::Push;
+    let mut waypoint = Waypoint {
+        number: wp,
+        ident: String::from(""),
+        lon: 0f64,
+        lat: 0f64,
+        altitude: 0,
+    };
+
     for element in parser {
         match element {
             Ok(XmlEvent::StartElement { name, .. }) => {
@@ -51,45 +62,57 @@ pub fn transform_route<W: Write, R: Read>(
 
                 // 1. Find opening of `Placemark`
                 if matches!(current_search, LookingFor::OpeningPlacemark) && name == "Placemark" {
-                    super::write_event(writer, EventType::OpeningElement, "Placemark")?;
+                    waypoint.number = wp;
+                    wp += 1;
                     current_search = LookingFor::OpeningName;
+                    action = Action::Push;
                 }
 
                 // 2. Find opening of `name`
                 if matches!(current_search, LookingFor::OpeningName) && name == "name" {
-                    super::write_event(writer, EventType::OpeningElement, "name")?;
                     current_search = LookingFor::ContentName;
                 }
 
                 // 5. Find opening of `styleUrl`
                 if matches!(current_search, LookingFor::OpeningStyleUrl) && name == "styleUrl" {
-                    super::write_event(writer, EventType::OpeningElement, "styleUrl")?;
                     current_search = LookingFor::ContentStyleUrl;
                 }
 
                 // 8. Find opening of `coordinates`
                 if matches!(current_search, LookingFor::OpeningCoordinates) && name == "coordinates"
                 {
-                    super::write_event(writer, EventType::OpeningElement, "coordinates")?;
                     current_search = LookingFor::ContentCoordinates;
                 }
             }
             Ok(XmlEvent::Characters(line)) => {
                 // 3. Find contents of `name`
                 if matches!(current_search, LookingFor::ContentName) {
-                    super::write_event(writer, EventType::Content, &line)?;
+                    waypoint.ident = String::from(&line);
                     current_search = LookingFor::ClosingName;
                 }
 
                 // 6. Find contents of `styleUrl`
                 if matches!(current_search, LookingFor::ContentStyleUrl) {
-                    super::write_event(writer, EventType::Content, &line)?;
+                    if line != "#FixMark" {
+                        action = Action::Drop;
+
+                        // We found that this Placemark is not part of the route, so we avoid
+                        // further processing of the waypoint.
+                        current_search = LookingFor::ClosingPlacemark;
+
+                        continue;
+                    }
                     current_search = LookingFor::ClosingStyleUrl;
                 }
 
                 // 9. Find contents of `coordinates`
                 if matches!(current_search, LookingFor::ContentCoordinates) {
-                    super::write_event(writer, EventType::Content, &line)?;
+                    let data: Vec<&str> = line.split(',').map(|l| l.trim()).collect();
+
+                    waypoint.lon = data[0].parse().expect("Couldn't read coordinate longitude");
+                    waypoint.lat = data[1].parse().expect("Couldn't read coordinate latitude");
+                    waypoint.altitude = data[2].parse().expect("Couldn't read coordinate altitude");
+
                     current_search = LookingFor::ClosingCoordinates;
                 }
             }
@@ -99,26 +122,23 @@ pub fn transform_route<W: Write, R: Read>(
 
                 // 4. Find closing of `name`
                 if matches!(current_search, LookingFor::ClosingName) && name == "name" {
-                    super::write_event(writer, EventType::ClosingElement, "Placemark")?;
                     current_search = LookingFor::OpeningStyleUrl;
                 }
 
                 // 7. Find closing of `styleUrl`
                 if matches!(current_search, LookingFor::ClosingStyleUrl) && name == "styleUrl" {
-                    super::write_event(writer, EventType::ClosingElement, "styleUrl")?;
                     current_search = LookingFor::OpeningCoordinates;
                 }
 
                 // 10. Find closing of `coordinates`
                 if matches!(current_search, LookingFor::ClosingCoordinates) && name == "coordinates"
                 {
-                    super::write_event(writer, EventType::ClosingElement, "coordinates")?;
                     current_search = LookingFor::ClosingPlacemark;
                 }
 
                 // 11. Find closing of `Placemark`
                 if matches!(current_search, LookingFor::ClosingPlacemark) && name == "Placemark" {
-                    super::write_event(writer, EventType::ClosingElement, "Placemark")?;
+                    eprintln!("{:?}, {:#?}", action, waypoint);
                     current_search = LookingFor::OpeningPlacemark;
                 }
             }
@@ -132,6 +152,24 @@ pub fn transform_route<W: Write, R: Read>(
     }
 
     Ok(())
+}
+
+/// Used to write a waypoint to the .fgfp file.
+#[derive(Debug)]
+struct Waypoint {
+    number: usize,
+    ident: String,
+    lon: f64,
+    lat: f64,
+    altitude: usize,
+}
+
+/// If the styleUrl matches `#FixMark`, it should be pushed. If it matches `#RouteMark` it should be
+/// dropped.
+#[derive(Debug)]
+enum Action {
+    Push,
+    Drop,
 }
 
 /// Internal function that takes a [`&str`](str) that would look something like
