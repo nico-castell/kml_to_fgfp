@@ -54,6 +54,8 @@ pub fn transform_route<W: Write, R: Read>(
         altitude: 0,
     };
 
+    super::write_event(writer, EventType::OpeningElement, "route")?;
+
     for element in parser {
         match element {
             Ok(XmlEvent::StartElement { name, .. }) => {
@@ -63,7 +65,6 @@ pub fn transform_route<W: Write, R: Read>(
                 // 1. Find opening of `Placemark`
                 if matches!(current_search, LookingFor::OpeningPlacemark) && name == "Placemark" {
                     waypoint.number = wp;
-                    wp += 1;
                     current_search = LookingFor::OpeningName;
                     action = Action::Push;
                 }
@@ -166,7 +167,10 @@ pub fn transform_route<W: Write, R: Read>(
 
                 // 11. Find closing of `Placemark`
                 if matches!(current_search, LookingFor::ClosingPlacemark) && name == "Placemark" {
-                    eprintln!("{:?}, {:#?}", action, waypoint);
+                    if matches!(action, Action::Push) {
+                        write_waypoint(writer, &waypoint)?;
+                        wp += 1;
+                    }
                     current_search = LookingFor::OpeningPlacemark;
                 }
             }
@@ -178,6 +182,8 @@ pub fn transform_route<W: Write, R: Read>(
             _ => {}
         }
     }
+
+    super::write_event(writer, EventType::ClosingElement, "route")?;
 
     Ok(())
 }
@@ -198,6 +204,38 @@ struct Waypoint {
 enum Action {
     Push,
     Drop,
+}
+
+/// Function that takes a waypoint and writes it to the .fgfp file
+fn write_waypoint<W: Write>(writer: &mut EventWriter<W>, wp: &Waypoint) -> xml::writer::Result<()> {
+    let number = if wp.number > 0 {
+        format!(" n={}", wp.number)
+    } else {
+        format!("")
+    };
+    let opening = format!("wp{}", number);
+
+    super::write_event(writer, EventType::OpeningElement, &opening)?;
+
+    super::write_event(writer, EventType::OpeningElement, "type type=string")?;
+    super::write_event(writer, EventType::Content, "basic")?;
+    super::write_event(writer, EventType::ClosingElement, "type")?;
+
+    super::write_event(writer, EventType::OpeningElement, "ident type=string")?;
+    super::write_event(writer, EventType::Content, &wp.ident)?;
+    super::write_event(writer, EventType::ClosingElement, "ident")?;
+
+    super::write_event(writer, EventType::OpeningElement, "lon type=double")?;
+    super::write_event(writer, EventType::Content, format!("{:.6}", wp.lon).as_str())?;
+    super::write_event(writer, EventType::ClosingElement, "lon")?;
+
+    super::write_event(writer, EventType::OpeningElement, "lat type=double")?;
+    super::write_event(writer, EventType::Content, format!("{:.6}", wp.lat).as_str())?;
+    super::write_event(writer, EventType::ClosingElement, "lat")?;
+
+    super::write_event(writer, EventType::ClosingElement, "wp")?;
+
+    Ok(())
 }
 
 /// Internal function that takes a [`&str`](str) that would look something like
