@@ -109,9 +109,37 @@ pub fn transform_route<W: Write, R: Read>(
                 if matches!(current_search, LookingFor::ContentCoordinates) {
                     let data: Vec<&str> = line.split(',').map(|l| l.trim()).collect();
 
-                    waypoint.lon = data[0].parse().expect("Couldn't read coordinate longitude");
-                    waypoint.lat = data[1].parse().expect("Couldn't read coordinate latitude");
-                    waypoint.altitude = data[2].parse().expect("Couldn't read coordinate altitude");
+                    let mut message = String::from("");
+
+                    waypoint.lon = match data[0].parse() {
+                        Ok(d) => d,
+                        Err(e) => {
+                            message = e.to_string();
+                            0f64
+                        }
+                    };
+                    waypoint.lat = match data[1].parse() {
+                        Ok(d) => d,
+                        Err(e) => {
+                            message = e.to_string();
+                            0f64
+                        }
+                    };
+                    waypoint.altitude = match data[2].parse() {
+                        Ok(d) => d,
+                        Err(e) => {
+                            message = e.to_string();
+                            0usize
+                        }
+                    };
+
+                    if !message.is_empty() {
+                        eprintln!(
+                            "\x1B[01;33mDropping\x1B[00;01m {}\x1B[00m waypoint: {}",
+                            waypoint.ident, message
+                        );
+                        action = Action::Drop;
+                    }
 
                     current_search = LookingFor::ClosingCoordinates;
                 }
