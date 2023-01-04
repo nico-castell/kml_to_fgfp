@@ -1,7 +1,7 @@
 use std::{error::Error, fs::File, io::BufReader, path::PathBuf};
 
 /// The library crate to perform the actual operations
-use kml_to_fgfp::{self, EmitterConfig, EventReader};
+use kml_to_fgfp::{self, Airport, EmitterConfig, EventReader};
 
 /// The config for the transformation of the .kml file into .fgfp. Taken as an argument by the
 /// [`run`](run) function.
@@ -40,9 +40,14 @@ impl Config {
 
         let departure = args.next();
 
-        let arrival = args.next();
+        let destination = args.next();
 
-        Ok(Config { input, output, departure, destination: arrival })
+        Ok(Config {
+            input,
+            output,
+            departure,
+            destination,
+        })
     }
 
     /// Prints the configuration options to stderr.
@@ -80,7 +85,17 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     kml_to_fgfp::write_start_of_tree(&mut writer)?;
 
     // 2. Write the destination and arrival airports.
-    kml_to_fgfp::write_airports(&mut writer, config.departure, config.destination)?;
+    let departure = match config.departure {
+        Some(code) => Some(airport_decoder(&code)),
+        _ => None,
+    };
+
+    let destination = match config.destination {
+        Some(code) => Some(airport_decoder(&code)),
+        _ => None,
+    };
+
+    kml_to_fgfp::write_airports(&mut writer, &departure, &destination)?;
 
     // Create the reader object.
     let input_file = File::open(config.input)?;
@@ -94,4 +109,20 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     kml_to_fgfp::close_tree(&mut writer)?;
 
     Ok(())
+}
+
+/// Decodes a string into an [`Airport`](kml_to_fgfp::Airport). Such that, for example, the string
+/// `SAEZ/11` refers to the airport SAEZ and runway 11.
+fn airport_decoder(code: &String) -> Airport {
+    let mut ident = String::from("ICAO");
+    let mut runway = None;
+
+    if code.contains('/') {
+        let data: Vec<&str> = code.split('/').map(|d| d.trim()).collect();
+
+        ident = String::from(data[0]);
+        runway = Some(String::from(data[1]));
+    }
+
+    Airport { ident, runway }
 }
