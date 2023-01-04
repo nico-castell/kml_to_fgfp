@@ -103,7 +103,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let parser = EventReader::new(input_file);
 
     // 3. Transform the route in the .kml to .fgfp.
-    kml_to_fgfp::transform_route(parser, &mut writer)?;
+    kml_to_fgfp::transform_route(parser, &mut writer, &departure, &destination)?;
 
     // 4. Close the xml tree.
     kml_to_fgfp::close_tree(&mut writer)?;

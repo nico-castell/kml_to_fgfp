@@ -21,6 +21,8 @@ pub struct Airport{
 pub fn transform_route<W: Write, R: Read>(
     parser: EventReader<R>,
     writer: &mut EventWriter<W>,
+    departure: &Option<Airport>,
+    destination: &Option<Airport>
 ) -> result::Result<(), Box<dyn Error>> {
     use xml::reader::XmlEvent;
 
@@ -38,6 +40,11 @@ pub fn transform_route<W: Write, R: Read>(
     };
 
     super::write_event(writer, EventType::OpeningElement, "route")?;
+
+    if let Some(ap) = departure {
+        write_ap_waypoint(writer, ap, true, wp)?;
+        wp += 1;
+    }
 
     for element in parser {
         match element {
@@ -66,6 +73,11 @@ pub fn transform_route<W: Write, R: Read>(
             }
             _ => {}
         }
+    }
+
+    if let Some(ap) = destination {
+        wp += 1;
+        write_ap_waypoint(writer, ap, false, wp)?;
     }
 
     super::write_event(writer, EventType::ClosingElement, "route")?;
@@ -273,6 +285,51 @@ fn write_waypoint<W: Write>(writer: &mut EventWriter<W>, wp: &Waypoint) -> xml::
 
     super::write_event(writer, EventType::ClosingElement, "wp")?;
 
+    Ok(())
+}
+
+/// Function that takes an airport waypoint and writes it to the .fgfp file
+fn write_ap_waypoint<W: Write>(
+    writer: &mut EventWriter<W>,
+    airport: &Airport,
+    is_departure: bool,
+    wp_counter: usize,
+) -> xml::writer::Result<()> {
+    let number = if wp_counter > 0 {
+        format!(" n={}", wp_counter)
+    } else {
+        format!("")
+    };
+    let opening = format!("wp{}", number);
+
+    super::write_event(writer, EventType::OpeningElement, &opening)?;
+
+    super::write_event(writer, EventType::OpeningElement, "type type=string")?;
+    super::write_event(writer, EventType::Content, "runway")?;
+    super::write_event(writer, EventType::ClosingElement, "type")?;
+
+    if is_departure == true {
+        super::write_event(writer, EventType::OpeningElement, "departure type=bool")?;
+        super::write_event(writer, EventType::Content, "true")?;
+        super::write_event(writer, EventType::ClosingElement, "departure")?;
+    } else {
+        // It's destination
+        super::write_event(writer, EventType::OpeningElement, "approach type=bool")?;
+        super::write_event(writer, EventType::Content, "true")?;
+        super::write_event(writer, EventType::ClosingElement, "approach")?;
+    }
+
+    if let Some(runway) = &airport.runway {
+        super::write_event(writer, EventType::OpeningElement, "ident type=string")?;
+        super::write_event(writer, EventType::Content, &runway)?;
+        super::write_event(writer, EventType::ClosingElement, "ident")?;
+    }
+
+    super::write_event(writer, EventType::OpeningElement, "icao type=string")?;
+    super::write_event(writer, EventType::Content, &airport.ident)?;
+    super::write_event(writer, EventType::ClosingElement, "icao")?;
+
+    super::write_event(writer, EventType::ClosingElement, "wp")?;
     Ok(())
 }
 
