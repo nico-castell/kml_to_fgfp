@@ -45,7 +45,7 @@ pub fn transform_route<W: Write, R: Read>(
 
     // The waypoint information
     let mut wp = 0;
-    let mut action = Action::Push;
+    let mut drop = false;
     let mut waypoint = Waypoint {
         number: wp,
         ident: String::from(""),
@@ -66,7 +66,7 @@ pub fn transform_route<W: Write, R: Read>(
                 if matches!(current_search, LookingFor::OpeningPlacemark) && name == "Placemark" {
                     waypoint.number = wp;
                     current_search = LookingFor::OpeningName;
-                    action = Action::Push;
+                    drop = false;
                 }
 
                 // 2. Find opening of `name`
@@ -95,7 +95,7 @@ pub fn transform_route<W: Write, R: Read>(
                 // 6. Find contents of `styleUrl`
                 if matches!(current_search, LookingFor::ContentStyleUrl) {
                     if line != "#FixMark" {
-                        action = Action::Drop;
+                        drop = true;
 
                         // We found that this Placemark is not part of the route, so we avoid
                         // further processing of the waypoint.
@@ -139,7 +139,7 @@ pub fn transform_route<W: Write, R: Read>(
                             "\x1B[01;33mDropping\x1B[00;01m {}\x1B[00m waypoint: {}",
                             waypoint.ident, message
                         );
-                        action = Action::Drop;
+                        drop = true;
                     }
 
                     current_search = LookingFor::ClosingCoordinates;
@@ -167,7 +167,7 @@ pub fn transform_route<W: Write, R: Read>(
 
                 // 11. Find closing of `Placemark`
                 if matches!(current_search, LookingFor::ClosingPlacemark) && name == "Placemark" {
-                    if matches!(action, Action::Push) {
+                    if !drop {
                         write_waypoint(writer, &waypoint)?;
                         wp += 1;
                     }
@@ -196,14 +196,6 @@ struct Waypoint {
     lon: f64,
     lat: f64,
     altitude: usize,
-}
-
-/// If the styleUrl matches `#FixMark`, it should be pushed. If it matches `#RouteMark` it should be
-/// dropped.
-#[derive(Debug)]
-enum Action {
-    Push,
-    Drop,
 }
 
 /// Function that takes a waypoint and writes it to the .fgfp file
