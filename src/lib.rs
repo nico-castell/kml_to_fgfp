@@ -124,25 +124,6 @@ pub fn transform_route<W: Write, R: Read>(
 
     for element in parser {
         match element {
-            Ok(XmlEvent::Characters(line)) => {
-                // 3. Find contents of `name`
-                if matches!(current_search, LookingFor::ContentName) {
-                write_event(writer, EventType::Content, &line)?;
-                    current_search = LookingFor::ClosingName;
-            }
-
-                // 6. Find contents of `styleUrl`
-                if matches!(current_search, LookingFor::ContentStyleUrl) {
-                    write_event(writer, EventType::Content, &line)?;
-                    current_search = LookingFor::ClosingStyleUrl;
-                }
-
-                // 9. Find contents of `coordinates`
-                if matches!(current_search, LookingFor::ContentCoordinates) {
-                    write_event(writer, EventType::Content, &line)?;
-                    current_search = LookingFor::ClosingCoordinates;
-                }
-            }
             Ok(XmlEvent::StartElement { name, .. }) => {
                 let name = name.to_string();
                 let name = simplify_name(&name);
@@ -169,6 +150,25 @@ pub fn transform_route<W: Write, R: Read>(
                 if matches!(current_search, LookingFor::OpeningCoordinates) && name == "coordinates" {
                     write_event(writer, EventType::OpeningElement, "coordinates")?;
                     current_search = LookingFor::ContentCoordinates;
+                }
+            }
+            Ok(XmlEvent::Characters(line)) => {
+                // 3. Find contents of `name`
+                if matches!(current_search, LookingFor::ContentName) {
+                write_event(writer, EventType::Content, &line)?;
+                    current_search = LookingFor::ClosingName;
+            }
+
+                // 6. Find contents of `styleUrl`
+                if matches!(current_search, LookingFor::ContentStyleUrl) {
+                    write_event(writer, EventType::Content, &line)?;
+                    current_search = LookingFor::ClosingStyleUrl;
+                }
+
+                // 9. Find contents of `coordinates`
+                if matches!(current_search, LookingFor::ContentCoordinates) {
+                    write_event(writer, EventType::Content, &line)?;
+                    current_search = LookingFor::ClosingCoordinates;
                 }
             }
             Ok(XmlEvent::EndElement { name }) => {
