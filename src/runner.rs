@@ -85,15 +85,9 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     kml_to_fgfp::write_start_of_tree(&mut writer)?;
 
     // 2. Write the destination and arrival airports.
-    let departure = match config.departure {
-        Some(code) => Some(airport_decoder(&code)),
-        _ => None,
-    };
+    let departure = config.departure.map(|ap| airport_decoder(&ap));
 
-    let destination = match config.destination {
-        Some(code) => Some(airport_decoder(&code)),
-        _ => None,
-    };
+    let destination = config.destination.map(|ap| airport_decoder(&ap));
 
     kml_to_fgfp::write_airports(&mut writer, &departure, &destination)?;
 
@@ -113,7 +107,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
 /// Decodes a string into an [`Airport`](kml_to_fgfp::Airport). Such that, for example, the string
 /// `SAEZ/11` refers to the airport SAEZ and runway 11.
-fn airport_decoder(code: &String) -> Airport {
+fn airport_decoder(code: &str) -> Airport {
     let mut ident = String::from("ICAO");
     let mut runway = None;
 

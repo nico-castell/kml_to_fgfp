@@ -12,9 +12,9 @@ pub use xml::{
 use super::EventType;
 
 /// Represents an airport by it's ICAO code and runway.
-pub struct Airport{
+pub struct Airport {
     pub ident: String,
-    pub runway: Option<String>
+    pub runway: Option<String>,
 }
 
 // TODO Idea: Use `output: Option<PathBuf>` to handle writing to a file or stdout.
@@ -22,7 +22,7 @@ pub fn transform_route<W: Write, R: Read>(
     parser: EventReader<R>,
     writer: &mut EventWriter<W>,
     departure: &Option<Airport>,
-    destination: &Option<Airport>
+    destination: &Option<Airport>,
 ) -> result::Result<(), Box<dyn Error>> {
     use xml::reader::XmlEvent;
 
@@ -283,7 +283,7 @@ fn write_waypoint<W: Write>(writer: &mut EventWriter<W>, wp: &Waypoint) -> xml::
     let number = if wp.number > 0 {
         format!(" n={}", wp.number)
     } else {
-        format!("")
+        String::from("")
     };
     let opening = format!("wp{}", number);
 
@@ -320,7 +320,7 @@ fn write_ap_waypoint<W: Write>(
     let number = if wp_counter > 0 {
         format!(" n={}", wp_counter)
     } else {
-        format!("")
+        String::from("")
     };
     let opening = format!("wp{}", number);
 
@@ -330,7 +330,7 @@ fn write_ap_waypoint<W: Write>(
     super::write_event(writer, EventType::Content, "runway")?;
     super::write_event(writer, EventType::ClosingElement, "type")?;
 
-    if is_departure == true {
+    if is_departure {
         super::write_event(writer, EventType::OpeningElement, "departure type=bool")?;
         super::write_event(writer, EventType::Content, "true")?;
         super::write_event(writer, EventType::ClosingElement, "departure")?;
@@ -343,7 +343,7 @@ fn write_ap_waypoint<W: Write>(
 
     if let Some(runway) = &airport.runway {
         super::write_event(writer, EventType::OpeningElement, "ident type=string")?;
-        super::write_event(writer, EventType::Content, &runway)?;
+        super::write_event(writer, EventType::Content, runway)?;
         super::write_event(writer, EventType::ClosingElement, "ident")?;
     }
 

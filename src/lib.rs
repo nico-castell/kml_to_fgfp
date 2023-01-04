@@ -63,19 +63,23 @@ pub fn write_airports<W: Write>(
 }
 
 /// Internal function to write the details of an airport.
-fn write_airport_details<W: Write>(writer: &mut EventWriter<W>, ident: &String, runway: &Option<String>) -> Result<()> {
+fn write_airport_details<W: Write>(
+    writer: &mut EventWriter<W>,
+    ident: &str,
+    runway: &Option<String>,
+) -> Result<()> {
     write_event(writer, EventType::OpeningElement, "airport type=string")?;
-    write_event(writer, EventType::Content, &ident)?;
+    write_event(writer, EventType::Content, ident)?;
     write_event(writer, EventType::ClosingElement, "airport")?;
 
     if let Some(runway) = runway {
         write_event(writer, EventType::OpeningElement, "runway type=string")?;
-        write_event(writer, EventType::Content, &runway)?;
+        write_event(writer, EventType::Content, runway)?;
         write_event(writer, EventType::ClosingElement, "runway")?;
     }
 
     write_event(writer, EventType::OpeningElement, "airport type=string")?;
-    write_event(writer, EventType::Content, &ident)?;
+    write_event(writer, EventType::Content, ident)?;
     write_event(writer, EventType::ClosingElement, "airport")?;
 
     Ok(())
@@ -120,7 +124,11 @@ enum EventType {
 ///
 /// # Errors
 /// This function can return an error when trying to write invalid xml, or other io errors.
-fn write_event<W: Write>(writer: &mut EventWriter<W>, event_type: EventType, line: &str) -> Result<()> {
+fn write_event<W: Write>(
+    writer: &mut EventWriter<W>,
+    event_type: EventType,
+    line: &str,
+) -> Result<()> {
     use xml::writer::XmlEvent;
 
     let line = line.trim();
