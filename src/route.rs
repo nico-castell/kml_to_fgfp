@@ -11,6 +11,12 @@ pub use xml::{
 
 use super::EventType;
 
+/// Represents an airport by it's ICAO code and runway.
+pub struct Airport{
+    pub ident: String,
+    pub runway: Option<String>
+}
+
 // TODO Idea: Use `output: Option<PathBuf>` to handle writing to a file or stdout.
 pub fn transform_route<W: Write, R: Read>(
     parser: EventReader<R>,

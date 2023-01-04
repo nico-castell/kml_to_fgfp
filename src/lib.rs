@@ -44,18 +44,18 @@ pub fn write_start_of_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> 
 /// - Runway: 34L
 pub fn write_airports<W: Write>(
     writer: &mut EventWriter<W>,
-    departure: Option<String>,
-    arrival: Option<String>,
+    departure: &Option<Airport>,
+    destination: &Option<Airport>,
 ) -> Result<()> {
-    if let Some(code) = departure {
+    if let Some(airport) = departure {
         write_event(writer, EventType::OpeningElement, "departure")?;
-        write_airport_details(writer, code)?;
+        write_airport_details(writer, &airport.ident, &airport.runway)?;
         write_event(writer, EventType::ClosingElement, "departure")?;
     }
 
-    if let Some(code) = arrival {
+    if let Some(airport) = destination {
         write_event(writer, EventType::OpeningElement, "destination")?;
-        write_airport_details(writer, code)?;
+        write_airport_details(writer, &airport.ident, &airport.runway)?;
         write_event(writer, EventType::ClosingElement, "destination")?;
     }
 
@@ -63,22 +63,20 @@ pub fn write_airports<W: Write>(
 }
 
 /// Internal function to write the details of an airport.
-fn write_airport_details<W: Write>(writer: &mut EventWriter<W>, code: String) -> Result<()> {
-    if code.contains('/') {
-        let elements: Vec<&str> = code.split('/').collect();
+fn write_airport_details<W: Write>(writer: &mut EventWriter<W>, ident: &String, runway: &Option<String>) -> Result<()> {
+    write_event(writer, EventType::OpeningElement, "airport type=string")?;
+    write_event(writer, EventType::Content, &ident)?;
+    write_event(writer, EventType::ClosingElement, "airport")?;
 
-        write_event(writer, EventType::OpeningElement, "airport type=string")?;
-        write_event(writer, EventType::Content, elements[0])?;
-        write_event(writer, EventType::ClosingElement, "airport")?;
-
+    if let Some(runway) = runway {
         write_event(writer, EventType::OpeningElement, "runway type=string")?;
-        write_event(writer, EventType::Content, elements[1])?;
+        write_event(writer, EventType::Content, &runway)?;
         write_event(writer, EventType::ClosingElement, "runway")?;
-    } else {
-        write_event(writer, EventType::OpeningElement, "airport type=string")?;
-        write_event(writer, EventType::Content, &code)?;
-        write_event(writer, EventType::ClosingElement, "airport")?;
     }
+
+    write_event(writer, EventType::OpeningElement, "airport type=string")?;
+    write_event(writer, EventType::Content, &ident)?;
+    write_event(writer, EventType::ClosingElement, "airport")?;
 
     Ok(())
 }
@@ -88,7 +86,7 @@ fn write_airport_details<W: Write>(writer: &mut EventWriter<W>, code: String) ->
 
 // This step was moved to it's own module because of it's size.
 mod route;
-pub use route::transform_route;
+pub use route::{transform_route, Airport};
 
 // # Step 4: CLosing tree
 // ######################
