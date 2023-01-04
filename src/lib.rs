@@ -97,23 +97,107 @@ pub fn transform_route<W: Write, R: Read>(
 ) -> result::Result<(), Box<dyn Error>> {
     use xml::reader::XmlEvent;
 
+    /// An example of the sequence to look for in the .kml's xml is:
+    ///
+    /// ```text
+    /// <Placemark>
+    ///    <name>EZE11</name>
+    ///    <styleUrl>#FixMark</styleUrl>
+    ///    <coordinates>-58.594239,-34.811897,823</coordinates>
+    /// </Placemark>
+    /// ```
+    enum LookingFor {
+        OpeningPlacemark,
+        OpeningName,
+        ContentName,
+        ClosingName,
+        OpeningStyleUrl,
+        ContentStyleUrl,
+        ClosingStyleUrl,
+        OpeningCoordinates,
+        ContentCoordinates,
+        ClosingCoordinates,
+        ClosingPlacemark,
+    }
+
+    let mut current_search = LookingFor::OpeningPlacemark;
+
     for element in parser {
         match element {
             Ok(XmlEvent::Characters(line)) => {
+                // 3. Find contents of `name`
+                if matches!(current_search, LookingFor::ContentName) {
                 write_event(writer, EventType::Content, &line)?;
+                    current_search = LookingFor::ClosingName;
             }
-            // TODO: Determine if handling attributes is actually necessary.
+
+                // 6. Find contents of `styleUrl`
+                if matches!(current_search, LookingFor::ContentStyleUrl) {
+                    write_event(writer, EventType::Content, &line)?;
+                    current_search = LookingFor::ClosingStyleUrl;
+                }
+
+                // 9. Find contents of `coordinates`
+                if matches!(current_search, LookingFor::ContentCoordinates) {
+                    write_event(writer, EventType::Content, &line)?;
+                    current_search = LookingFor::ClosingCoordinates;
+                }
+            }
             Ok(XmlEvent::StartElement { name, .. }) => {
                 let name = name.to_string();
                 let name = simplify_name(&name);
 
-                write_event(writer, EventType::OpeningElement, name)?;
+                // 1. Find opening of `Placemark`
+                if matches!(current_search, LookingFor::OpeningPlacemark) && name == "Placemark" {
+                    write_event(writer, EventType::OpeningElement, "Placemark")?;
+                    current_search = LookingFor::OpeningName;
+                }
+
+                // 2. Find opening of `name`
+                if matches!(current_search, LookingFor::OpeningName) && name == "name" {
+                    write_event(writer, EventType::OpeningElement, "name")?;
+                    current_search = LookingFor::ContentName;
+                }
+
+                // 5. Find opening of `styleUrl`
+                if matches!(current_search, LookingFor::OpeningStyleUrl) && name == "styleUrl" {
+                    write_event(writer, EventType::OpeningElement, "styleUrl")?;
+                    current_search = LookingFor::ContentStyleUrl;
+                }
+
+                // 8. Find opening of `coordinates`
+                if matches!(current_search, LookingFor::OpeningCoordinates) && name == "coordinates" {
+                    write_event(writer, EventType::OpeningElement, "coordinates")?;
+                    current_search = LookingFor::ContentCoordinates;
+                }
             }
             Ok(XmlEvent::EndElement { name }) => {
                 let name = name.to_string();
                 let name = simplify_name(&name);
 
-                write_event(writer, EventType::ClosingElement, name)?;
+                // 4. Find closing of `name`
+                if matches!(current_search, LookingFor::ClosingName) && name == "name" {
+                    write_event(writer, EventType::ClosingElement, "Placemark")?;
+                    current_search = LookingFor::OpeningStyleUrl;
+                }
+
+                // 7. Find closing of `styleUrl`
+                if matches!(current_search, LookingFor::ClosingStyleUrl) && name == "styleUrl" {
+                    write_event(writer, EventType::ClosingElement, "styleUrl")?;
+                    current_search = LookingFor::OpeningCoordinates;
+                }
+
+                // 10. Find closing of `coordinates`
+                if matches!(current_search, LookingFor::ClosingCoordinates) && name == "coordinates" {
+                    write_event(writer, EventType::ClosingElement, "coordinates")?;
+                    current_search = LookingFor::ClosingPlacemark;
+                }
+
+                // 11. Find closing of `Placemark`
+                if matches!(current_search, LookingFor::ClosingPlacemark) && name == "Placemark" {
+                    write_event(writer, EventType::ClosingElement, "Placemark")?;
+                    current_search = LookingFor::OpeningPlacemark;
+                }
             }
             Err(e) => {
                 // TODO: Determine if there's a better way to handle this error.
