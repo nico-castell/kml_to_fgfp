@@ -56,8 +56,14 @@ pub fn transform_route<W: Write, R: Read>(
                     handle_start_event(waypoint, current_search, drop, wp, name);
             }
             Ok(XmlEvent::Characters(line)) => {
-                (waypoint, current_search, drop) =
-                    handle_characters_event(waypoint, current_search, drop, line);
+                (waypoint, current_search, drop) = handle_characters_event(
+                    waypoint,
+                    current_search,
+                    drop,
+                    line,
+                    departure,
+                    destination,
+                );
             }
             Ok(XmlEvent::EndElement { name }) => {
                 let name = name.to_string();
@@ -76,7 +82,6 @@ pub fn transform_route<W: Write, R: Read>(
     }
 
     if let Some(ap) = destination {
-        wp += 1;
         write_ap_waypoint(writer, ap, false, wp)?;
     }
 
@@ -147,11 +152,28 @@ fn handle_characters_event(
     mut current_search: LookingFor,
     mut drop: bool,
     line: String,
+    departure_airport: &Option<Airport>,
+    destination_airport: &Option<Airport>,
 ) -> (Waypoint, LookingFor, bool) {
     // 3. Find contents of `name`
     if matches!(current_search, LookingFor::ContentName) {
         waypoint.ident = String::from(&line);
         current_search = LookingFor::ClosingName;
+
+        // Handle the waypoints that reference airports by dropping them.
+        if let Some(airport) = departure_airport {
+            if line == airport.ident {
+                current_search = LookingFor::ClosingPlacemark;
+                drop = true;
+            }
+        }
+
+        if let Some(airport) = destination_airport {
+            if line == airport.ident {
+                current_search = LookingFor::ClosingPlacemark;
+                drop = true;
+            }
+        }
     }
 
     // 6. Find contents of `styleUrl`
