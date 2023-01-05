@@ -117,7 +117,7 @@ pub fn handle_characters_event(
     if matches!(current_search, LookingFor::ContentCoordinates) {
         let data: Vec<&str> = line.split(',').map(|l| l.trim()).collect();
 
-        let mut message = String::from("");
+        let mut message = String::new();
 
         waypoint.lon = match data[0].parse() {
             Ok(d) => d,

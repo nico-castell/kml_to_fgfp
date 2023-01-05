@@ -62,17 +62,29 @@ impl Config {
         eprint!(
             "\
 Usage:
-      \x1B[01m{} INPUT OUTPUT\x1B[00m\n
+      \x1B[01m{} INPUT OUTPUT [DEPARTURE_AIRPORT] [DESTINATION AIRPORT]\x1B[00m\n
+INPUT is the Google Earth (.kml) file.\n
+OUTPUT is the name of the generated FlightGear flight plan (.fgfp) file.\n
+[DEPARTURE_AIRPORT] is an optional argument detailing the departure airport's
+ICAO designation. It would look something like `SAEZ`. You can also type a `/`
+to add a specific runway, so it would look like `SAEZ/11`.\n
+[DESTINATION_AIRPORT] is an optional argument detailing the destination
+airport's ICAO designation. It would look something like `YSSY`. You can also
+type a `/` to add a specific runway, so it would look like `YSSY/34L`.\n
 Version: {}, {} License
 ",
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION"),
             env!("CARGO_PKG_LICENSE")
-        )
+        );
     }
 }
 
-// FIXME: Add documentation after documenting kml_to_fgfp::transform.
+/// This function coordinates the use of this crate's library to process the .kml and create a .fgfp
+/// file.
+///
+/// # Errors
+/// This function can fail if some part of the process tries to write invalid xml or for io errors.
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     // Create the writer object.
     let mut output_file = File::create(config.output)?;

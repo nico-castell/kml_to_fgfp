@@ -21,6 +21,11 @@ pub struct Airport {
 }
 
 // TODO Idea: Use `output: Option<PathBuf>` to handle writing to a file or stdout.
+/// This function will use the Placemarks in the .kml file to write a route using waypoints for the
+/// .fgfp file.
+///
+/// # Errors
+/// This function can fail if trying to write invalid xml or other io errors.
 pub fn transform_route<W: Write, R: Read>(
     parser: EventReader<R>,
     writer: &mut EventWriter<W>,
@@ -36,7 +41,7 @@ pub fn transform_route<W: Write, R: Read>(
     let mut drop = false;
     let mut waypoint = Waypoint {
         number: wp,
-        ident: String::from(""),
+        ident: String::new(),
         lon: 0f64,
         lat: 0f64,
         altitude: 0,
@@ -99,7 +104,7 @@ fn write_waypoint<W: Write>(writer: &mut EventWriter<W>, wp: &Waypoint) -> xml::
     let number = if wp.number > 0 {
         format!(" n={}", wp.number)
     } else {
-        String::from("")
+        String::new()
     };
     let opening = format!("wp{}", number);
 
@@ -136,7 +141,7 @@ fn write_ap_waypoint<W: Write>(
     let number = if wp_counter > 0 {
         format!(" n={}", wp_counter)
     } else {
-        String::from("")
+        String::new()
     };
     let opening = format!("wp{}", number);
 

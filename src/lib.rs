@@ -1,3 +1,27 @@
+//! # kml_to_fgfp
+//!
+//! This crate contains tools to process a flight plan from SimBrief in Google Earth's .kml file
+//! format to create a flight plan for [`FlightGear`](https://www.flightgear.org/), using the .fgfp
+//! file extension.
+//!
+//! ## How to use it:
+//! There are 6 steps to use this library:
+//!
+//! 1. Create an [`EventWriter`](xml::writer::EventWriter), it will be used to write to the output
+//!    file.
+//! 2. Write the beginning of the .fgfp xml tree using the
+//!    [`write_start_of_tree`](write_start_of_tree) function.
+//! 3. Create 2 `Option<kml_to_fgfp::Airport>` setting the value to `None` if no departure or
+//!    no destination airports are in the flight plan.
+//!
+//!    Then call the [`write_airports`](write_airports) function, passing the previous options as
+//!    arguments.
+//! 4. Create an [`EventReader`](xml::reader::EventReader), it will be used to read the .kml file.
+//! 5. Call the [`transform_route`](transform_route) function, which will need the xml
+//!    `EventReader`, `EventWriter`, and 2 airport options. This function creates the .fgfp's route
+//!    using waypoints with the information in the .kml file.
+//! 6. Close the xml tree by calling the [`close_tree`](close_tree) function.
+
 use std::io::Write;
 
 // Export these structs so callers needn't have to declare xml-rs as a dependency.
@@ -10,6 +34,9 @@ use xml::writer::{EventWriter, Result};
 
 /// Write the start of the .fgfp's xml tree. AKA the version, flight-rules, flight-type and
 /// estimated duration.
+///
+/// # Errors
+/// This function can fail if trying to write invalid xml or other io errors.
 #[rustfmt::skip]
 pub fn write_start_of_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> {
     write_event(writer, EventType::OpeningElement, "PropertyList")?;
@@ -42,6 +69,9 @@ pub fn write_start_of_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> 
 /// Codes being given as YSSY/34L, for example, will be interpreted as:
 /// - Airport code: YSSY
 /// - Runway: 34L
+///
+/// # Errors
+/// This function can fail if trying to write invalid xml or other io errors.
 pub fn write_airports<W: Write>(
     writer: &mut EventWriter<W>,
     departure: &Option<Airport>,
@@ -96,6 +126,9 @@ pub use route::{transform_route, Airport};
 // ######################
 
 /// Write the end of the .fgfp's xml tree.
+///
+/// # Errors
+/// This function can fail if trying to write invalid xml or other io errors.
 #[rustfmt::skip]
 pub fn close_tree<W: Write>(writer: &mut EventWriter<W>) -> Result<()> {
     write_event(writer, EventType::ClosingElement, "PropertyList")?;
