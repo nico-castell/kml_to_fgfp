@@ -81,8 +81,21 @@ pub fn transform_route<W: Write, R: Read>(
                     handlers::handle_end_event(writer, waypoint, current_search, drop, wp, name)?;
             }
             Err(e) => {
-                // TODO: Determine if there's a better way to handle this error.
-                eprintln!("Error: {}", e);
+                // Split the error message to simplify it.
+                let msg = e.to_string();
+                let msg: Vec<&str> = msg
+                    .split_whitespace()
+                    .map(|m| simplify_name(m))
+                    .collect();
+
+                // Make a string from the vector.
+                let mut message = String::new();
+                for m in msg {
+                    message.push_str(format!("{} ", m).as_str());
+                }
+
+                // Print error and exit loop.
+                eprintln!("\x1B[01;33mError on line\x1B[00m: {}", message);
                 break;
             }
             _ => {}
@@ -178,7 +191,7 @@ fn write_ap_waypoint<W: Write>(
 
 /// Internal function that takes a [`&str`](str) that would look something like
 /// `{http:://www.opengis.net/kml/2.2}coordinates` and removes the link by splitting the &str at the
-/// '}' and returning the element to the right: `coordinates`
+/// '}' and returning the element to the right: `coordinates`.
 fn simplify_name(name: &str) -> &str {
     let is_split = match name.find('}') {
         Some(_) => 1,
