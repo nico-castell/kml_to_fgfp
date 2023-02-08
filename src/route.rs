@@ -127,6 +127,14 @@ fn write_waypoint<W: Write>(writer: &mut EventWriter<W>, wp: &Waypoint) -> xml::
     super::write_event(writer, EventType::Content, "basic")?;
     super::write_event(writer, EventType::ClosingElement, "type")?;
 
+    super::write_event(writer, EventType::OpeningElement, "alt-restrict type=string")?;
+    super::write_event(writer, EventType::Content, "at")?;
+    super::write_event(writer, EventType::ClosingElement, "alt-restrict")?;
+
+    super::write_event(writer, EventType::OpeningElement, "altitude-ft type=double")?;
+    super::write_event(writer, EventType::Content, format!("{:.0}", &wp.altitude).as_str())?;
+    super::write_event(writer, EventType::ClosingElement, "altitude-ft")?;
+
     super::write_event(writer, EventType::OpeningElement, "ident type=string")?;
     super::write_event(writer, EventType::Content, &wp.ident)?;
     super::write_event(writer, EventType::ClosingElement, "ident")?;

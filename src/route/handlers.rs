@@ -133,12 +133,20 @@ pub fn handle_characters_event(
                 0f64
             }
         };
-        waypoint.altitude = match data[2].parse() {
-            Ok(d) => d,
-            Err(e) => {
-                message = e.to_string();
-                0usize
-            }
+        waypoint.altitude = {
+            let meters: f64 = match data[2].parse() {
+                Ok(d) => d,
+                Err(e) => {
+                    message = e.to_string();
+                    0f64
+                }
+            };
+
+            // We don't want exact precision, we need to be precise up to one hundred feet. Example:
+            // If the real altitude is 12478.64 feet, we interpret that as 12500 feet. We divide by
+            // one hundred and multiply by one hundred to let the round function do this for us.
+            let feet = (meters * 3.280839895 / 100.0).round() * 100.0;
+            feet as usize
         };
 
         if !message.is_empty() {
