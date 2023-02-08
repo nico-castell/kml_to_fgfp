@@ -108,10 +108,6 @@ fn write_airport_details<W: Write>(
         write_event(writer, EventType::ClosingElement, "runway")?;
     }
 
-    write_event(writer, EventType::OpeningElement, "airport type=string")?;
-    write_event(writer, EventType::Content, ident)?;
-    write_event(writer, EventType::ClosingElement, "airport")?;
-
     Ok(())
 }
 
