@@ -14,7 +14,7 @@ fn main() {
     let config = match Config::build(env::args()) {
         Ok(args) => args,
         Err(error) => {
-            eprintln!("\x1B[01;31mConfiguration error\x1B[00m: {}", error);
+            eprintln!("\x1B[01;31mConfiguration error\x1B[00m: {error}");
             Config::print_config();
             process::exit(1);
         }
@@ -22,7 +22,7 @@ fn main() {
 
     // Run the program
     if let Err(error) = runner::run(config) {
-        eprintln!("\x1B[01;31mApplication error\x1B[00m: {}", error);
+        eprintln!("\x1B[01;31mApplication error\x1B[00m: {error}");
         process::exit(2);
     }
 }

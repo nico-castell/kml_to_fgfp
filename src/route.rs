@@ -85,17 +85,17 @@ pub fn transform_route<W: Write, R: Read>(
                 let msg = e.to_string();
                 let msg: Vec<&str> = msg
                     .split_whitespace()
-                    .map(|m| simplify_name(m))
+                    .map(simplify_name)
                     .collect();
 
                 // Make a string from the vector.
                 let mut message = String::new();
                 for m in msg {
-                    message.push_str(format!("{} ", m).as_str());
+                    message.push_str(format!("{m} ").as_str());
                 }
 
                 // Print error and exit loop.
-                eprintln!("\x1B[01;33mError on line\x1B[00m: {}", message);
+                eprintln!("\x1B[01;33mError on line\x1B[00m: {message}");
                 break;
             }
             _ => {}
@@ -119,7 +119,7 @@ fn write_waypoint<W: Write>(writer: &mut EventWriter<W>, wp: &Waypoint) -> xml::
     } else {
         String::new()
     };
-    let opening = format!("wp{}", number);
+    let opening = format!("wp{number}");
 
     super::write_event(writer, EventType::OpeningElement, &opening)?;
 
@@ -160,11 +160,11 @@ fn write_ap_waypoint<W: Write>(
     wp_counter: usize,
 ) -> xml::writer::Result<()> {
     let number = if wp_counter > 0 {
-        format!(" n={}", wp_counter)
+        format!(" n={wp_counter}")
     } else {
         String::new()
     };
-    let opening = format!("wp{}", number);
+    let opening = format!("wp{number}");
 
     super::write_event(writer, EventType::OpeningElement, &opening)?;
 
